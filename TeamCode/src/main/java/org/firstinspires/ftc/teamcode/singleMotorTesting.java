@@ -27,45 +27,78 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.firstinspires.ftc.robotcontroller.external.samples;
+package org.firstinspires.ftc.teamcode;
 
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.OpticalDistanceSensor;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.Servo;
 
-/*
- * This is an example LinearOpMode that shows how to use
- * a Modern Robotics Optical Distance Sensor
- * It assumes that the ODS sensor is configured with a name of "sensor_ods".
- *
- * Use Android Studio to Copy this Class, and Paste it into your team's code folder with a new name.
- * Remove or comment out the @Disabled line to add this opmode to the Driver Station OpMode list
- */
-@TeleOp(name = "Sensor: MR ODS", group = "Sensor")
-@Disabled
-public class SensorMROpticalDistance extends LinearOpMode {
 
-  OpticalDistanceSensor odsSensor;  // Hardware Device Object
+@TeleOp(name="armAndClaw", group="Linear Opmode")
+public class singleMotorTesting extends LinearOpMode {
 
-  @Override
-  public void runOpMode() {
+   // declare OpMode members
 
-    // get a reference to our Light Sensor object.
-    odsSensor = hardwareMap.get(OpticalDistanceSensor.class, "sensor_ods");
 
-    // wait for the start button to be pressed.
-    waitForStart();
+   // intake
+   private DcMotor         armMotor        = null;
+   private Servo           clawServo           = null;
+   private boolean clawToggle=true;
+   private double prevArm=1;
 
-    // while the op mode is active, loop and read the light levels.
-    // Note we use opModeIsActive() as our loop condition because it is an interruptible method.
-    while (opModeIsActive()) {
 
-      // send the info back to driver station using telemetry function.
-      telemetry.addData("Raw",    odsSensor.getRawLightDetected());
-      telemetry.addData("Normal", odsSensor.getLightDetected());
+   @Override
+   public void runOpMode() {
 
+      telemetry.addData("Status", "Initialized");
       telemetry.update();
-    }
-  }
+      // init intake motors
+      // init servo
+      armMotor       = hardwareMap.get(DcMotor.class, "armMotor");
+      clawServo       = hardwareMap.get(Servo.class, "clawServo");
+
+      clawServo.setPosition(0);
+
+      // Wait for the game to start (driver presses PLAY)
+      waitForStart();
+
+      // run until the end of the match (driver presses STOP)
+
+      while (opModeIsActive()) {
+         /* READ INPUTS */
+         // read current values of joystick
+         double right_y=gamepad1.right_stick_y;
+
+         boolean a = gamepad1.a;
+
+         /* DO INTAKE STUFF */
+
+         if (a) {
+            if (clawToggle) {
+               if (clawServo.getPosition() == 0) {
+                  clawServo.setPosition(1);
+               } else {
+                  clawServo.setPosition(0);
+               }
+               clawToggle = false;
+            }
+         } else {
+            clawToggle = true;
+         }
+         armMotor.setPower(right_y);
+         if(right_y<Math.abs(prevArm)) {
+            prevArm=right_y;
+         }
+         else{
+            if(right_y<0){
+               prevArm=right_y;
+            }
+         }
+      }
+
+      armMotor.setPower(0);
+
+   }
 }

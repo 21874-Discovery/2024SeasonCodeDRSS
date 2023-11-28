@@ -33,6 +33,8 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.hardware.ServoController;
 
 
 @TeleOp(name="RobotTeleOp", group="Linear Opmode")
@@ -46,12 +48,18 @@ public class RobotTeleOp extends LinearOpMode {
    private DcMotor         backRight           = null;
 
    // intake
-   private DcMotor         intakeStage1        = null;
-   private DcMotor         intakeStage2        = null;
-   //power for intake (can be changed later)
+   private DcMotor         intakeMotor        = null;
+
+   // arm
+   private DcMotor         armMotor            = null;
+
+   private Servo           clawServo           = null;
+
+   // power for intake (can be changed later)
    private double          intakePower         = 0.5;
-   //toggle so that only one input is registered per button press
-   boolean toggle=true;
+
+   // toggles so that only one input is registered per button press
+   boolean dirToggle=true,clawToggle=true;
 
    @Override
    public void runOpMode() {
@@ -66,8 +74,14 @@ public class RobotTeleOp extends LinearOpMode {
       backRight       = hardwareMap.get(DcMotor.class, "backRight");
 
       // init intake motors
-      intakeStage1    = hardwareMap.get(DcMotor.class, "intakeStage1");
-      intakeStage2    = hardwareMap.get(DcMotor.class, "intakeStage2");
+      intakeMotor    = hardwareMap.get(DcMotor.class, "intakeMotor");
+
+
+      // init arm motor
+      armMotor        = hardwareMap.get(DcMotor.class, "armMotor");
+
+      // init servo
+      clawServo       = hardwareMap.get(Servo.class, "clawServo");
 
       // left is reverse of right
       frontLeft.setDirection(DcMotor.Direction.REVERSE);
@@ -76,10 +90,13 @@ public class RobotTeleOp extends LinearOpMode {
       backRight.setDirection(DcMotor.Direction.FORWARD);
 
       // TODO: may have to flip these
-      intakeStage1.setDirection(DcMotorSimple.Direction.FORWARD);
-      intakeStage2.setDirection(DcMotorSimple.Direction.REVERSE);
-      //set direction "status" to intakeStage1 dir
-      DcMotorSimple.Direction status=intakeStage1.getDirection();
+      intakeMotor.setDirection(DcMotorSimple.Direction.FORWARD);
+
+      //arm direction
+      armMotor.setDirection(DcMotorSimple.Direction.FORWARD);
+
+      //set default position of servo as 0
+      clawServo.setPosition(0);
 
       // Wait for the game to start (driver presses PLAY)
       waitForStart();
@@ -91,10 +108,14 @@ public class RobotTeleOp extends LinearOpMode {
          float lx    = gamepad1.left_stick_x;
          float ly    = -gamepad1.left_stick_y;
          float rx    = gamepad1.right_stick_x;
+         float ry    = -gamepad2.right_stick_y;
 
          // read current value of right bumper
          boolean rBumper = gamepad1.right_bumper;
          boolean lBumper = gamepad1.left_bumper;
+
+         // read the face buttons
+         boolean a = gamepad2.a;
 
 
          /* DO MOTOR STUFF */
@@ -124,29 +145,47 @@ public class RobotTeleOp extends LinearOpMode {
 
          /* DO INTAKE STUFF */
          if (rBumper) {
-            intakeStage1.setPower(intakePower);
-            intakeStage2.setPower(intakePower);
+            intakeMotor.setPower(intakePower);
          }
          else {
-            intakeStage1.setPower(0);
-            intakeStage2.setPower(0);
+            intakeMotor.setPower(0);
          }
          if (lBumper) {
             //only lets the code below run once
-            if(toggle) {
+            if(dirToggle) {
                //swaps the direction of the motors, therefore reversing the direction
-               intakeStage1.setDirection(intakeStage2.getDirection());
-               intakeStage2.setDirection(status);
-               //sets status to the new intakeStage1 direction
-               status=intakeStage1.getDirection();
+               if(intakeMotor.getDirection()==DcMotorSimple.Direction.FORWARD){
+                  intakeMotor.setDirection(DcMotorSimple.Direction.REVERSE);
+               }
+               else if(intakeMotor.getDirection()==DcMotorSimple.Direction.REVERSE){
+                  intakeMotor.setDirection(DcMotorSimple.Direction.FORWARD);
+               }
                //disables further presses
-               toggle = false;
+               dirToggle = false;
             }
          }
          else{
+
             //when button is released, let new button presses be registered
-            toggle=true;
+            dirToggle=true;
          }
+         if(a){
+            if(clawToggle) {
+               if(clawServo.getPosition()==0||clawServo.getPosition()==-1) {
+                  clawServo.setPosition(1);
+               }
+               else{
+                  clawServo.setPosition(-1);
+               }
+               clawToggle=false;
+            }
+         }
+         else{
+            clawToggle=true;
+         }
+
+         // set arm power
+         armMotor.setPower(ry);
 
          /* PRINT STUFF */
 
@@ -181,6 +220,8 @@ public class RobotTeleOp extends LinearOpMode {
       frontRight.setPower(0.0);
       backLeft.setPower(0.0);
       backRight.setPower(0.0);
+      armMotor.setPower(0.0);
+      intakeMotor.setPower(0.0);
    }
 }
 

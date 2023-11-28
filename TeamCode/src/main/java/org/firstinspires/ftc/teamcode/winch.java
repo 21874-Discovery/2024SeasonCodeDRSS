@@ -27,53 +27,59 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.firstinspires.ftc.robotcontroller.external.samples;
+package org.firstinspires.ftc.teamcode;
 
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
-import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.util.ElapsedTime;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.Servo;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
 
-/**
- * Demonstrates empty OpMode
- */
-@TeleOp(name = "Concept: NullOp", group = "Concept")
-@Disabled
-public class ConceptNullOp extends OpMode {
+@TeleOp(name="winch", group="Linear Opmode")
+public class winch extends LinearOpMode {
 
-  private ElapsedTime runtime = new ElapsedTime();
+   // declare OpMode members
 
-  @Override
-  public void init() {
-    telemetry.addData("Status", "Initialized");
-  }
 
-  /*
-     * Code to run when the op mode is first enabled goes here
-     * @see com.qualcomm.robotcore.eventloop.opmode.OpMode#start()
-     */
-  @Override
-  public void init_loop() {
-  }
+   // dawinching
+   private DcMotor winchMotor = null;
 
-  /*
-   * This method will be called ONCE when start is pressed
-   * @see com.qualcomm.robotcore.eventloop.opmode.OpMode#loop()
-   */
-  @Override
-  public void start() {
-    runtime.reset();
-  }
+   private double winchPower = 0.5;
 
-  /*
-   * This method will be called repeatedly in a loop
-   * @see com.qualcomm.robotcore.eventloop.opmode.OpMode#loop()
-   */
-  @Override
-  public void loop() {
-    telemetry.addData("Status", "Run Time: " + runtime.toString());
-  }
+   @Override
+   public void runOpMode() {
+
+      winchMotor = hardwareMap.get(DcMotor.class, "winchMotor");
+
+      telemetry.addData("Status", "Initialized");
+      telemetry.update();
+      // init intake motors
+      // init servo
+
+      // Wait for the game to start (driver presses PLAY)
+      waitForStart();
+
+      // run until the end of the match (driver presses STOP)
+
+      while (opModeIsActive()) {
+         /* READ INPUTS */
+         // read current values of joystick
+         float rTrigger = gamepad1.right_trigger;
+         float lTrigger = gamepad1.left_trigger;
+         winchMotor.setPower(0.0);
+
+         if (rTrigger >= 0.05) {
+            winchMotor.setPower(rTrigger);
+         }
+         else if (lTrigger >= 0.05) {
+            winchMotor.setPower(-(lTrigger));
+         }
+         if (rTrigger >= 0.05 && lTrigger >= 0.05) {
+            winchMotor.setPower(rTrigger-lTrigger);
+         }
+
+      }
+      winchMotor.setPower(0.0);
+   }
 }

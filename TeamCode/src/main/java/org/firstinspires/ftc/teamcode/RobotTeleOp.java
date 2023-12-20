@@ -29,6 +29,8 @@
 
 package org.firstinspires.ftc.teamcode;
 
+import com.acmerobotics.dashboard.FtcDashboard;
+import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -39,24 +41,34 @@ import com.qualcomm.robotcore.hardware.ServoController;
 
 @TeleOp(name="RobotTeleOp", group="Linear Opmode")
 public class RobotTeleOp extends LinearOpMode {
+   private FtcDashboard dashboard;
 
    // declare OpMode members
    // drivetrain
-   private DcMotor         frontLeft           = null;
-   private DcMotor         frontRight          = null;
-   private DcMotor         backLeft            = null;
-   private DcMotor         backRight           = null;
+   private DcMotor         topLeft           = null;
+   private DcMotor         topRight          = null;
+   private DcMotor         bottomLeft            = null;
+   private DcMotor         bottomRight           = null;
 
    // intake
-   private DcMotor         intakeMotor        = null;
+   private DcMotor         intakeMotor1        = null;
+   private DcMotor         intakeMotor2        = null;
 
    // arm
    private DcMotor         armMotor            = null;
 
    private Servo           clawServo           = null;
 
+   private Servo           dlServo           = null;
+
    // power for intake (can be changed later)
-   private double          intakePower         = 0.5;
+   private double          intakePower         = dashboardData.intakeP;
+
+   private boolean dlTog=true;
+
+   //dawinching
+   //private DcMotor winchMotor = null;
+
 
    // toggles so that only one input is registered per button press
    boolean dirToggle=true,clawToggle=true;
@@ -64,17 +76,22 @@ public class RobotTeleOp extends LinearOpMode {
    @Override
    public void runOpMode() {
 
-      telemetry.addData("Status", "Initialized");
+      dashboard = FtcDashboard.getInstance();
+      telemetry = new MultipleTelemetry(telemetry, dashboard.getTelemetry());
+
+
+      telemetry.addData("Status", "newest INIT 12/13/23");
       telemetry.update();
 
       // init the drive system variables
-      frontLeft       = hardwareMap.get(DcMotor.class, "frontLeft");
-      frontRight      = hardwareMap.get(DcMotor.class, "frontRight");
-      backLeft        = hardwareMap.get(DcMotor.class, "backLeft");
-      backRight       = hardwareMap.get(DcMotor.class, "backRight");
+      topLeft       = hardwareMap.get(DcMotor.class, "topLeft");
+      topRight      = hardwareMap.get(DcMotor.class, "topRight");
+      bottomLeft        = hardwareMap.get(DcMotor.class, "bottomLeft");
+      bottomRight       = hardwareMap.get(DcMotor.class, "bottomRight");
 
       // init intake motors
-      intakeMotor    = hardwareMap.get(DcMotor.class, "intakeMotor");
+      intakeMotor1    = hardwareMap.get(DcMotor.class, "intakeMotor1");
+      intakeMotor2    = hardwareMap.get(DcMotor.class, "intakeMotor2");
 
 
       // init arm motor
@@ -83,14 +100,20 @@ public class RobotTeleOp extends LinearOpMode {
       // init servo
       clawServo       = hardwareMap.get(Servo.class, "clawServo");
 
+      dlServo       = hardwareMap.get(Servo.class, "dlServo");
+
+      //winch motor
+      //winchMotor = hardwareMap.get(DcMotor.class, "winchMotor");
+
       // left is reverse of right
-      frontLeft.setDirection(DcMotor.Direction.REVERSE);
-      frontRight.setDirection(DcMotor.Direction.FORWARD);
-      backLeft.setDirection(DcMotor.Direction.REVERSE);
-      backRight.setDirection(DcMotor.Direction.FORWARD);
+      topLeft.setDirection(DcMotor.Direction.REVERSE);
+      topRight.setDirection(DcMotor.Direction.FORWARD);
+      bottomLeft.setDirection(DcMotor.Direction.REVERSE);
+      bottomRight.setDirection(DcMotor.Direction.FORWARD);
 
       // TODO: may have to flip these
-      intakeMotor.setDirection(DcMotorSimple.Direction.FORWARD);
+      intakeMotor1.setDirection(DcMotorSimple.Direction.FORWARD);
+      intakeMotor2.setDirection(DcMotorSimple.Direction.FORWARD);
 
       //arm direction
       armMotor.setDirection(DcMotorSimple.Direction.FORWARD);
@@ -104,18 +127,26 @@ public class RobotTeleOp extends LinearOpMode {
       // run until the end of the match (driver presses STOP)
       while (opModeIsActive()) {
          /* READ INPUTS */
+         // TODO: SET UP GAMEPAD SPECIFIC INPUTS
          // read current values of joystick
          float lx    = gamepad1.left_stick_x;
          float ly    = -gamepad1.left_stick_y;
          float rx    = gamepad1.right_stick_x;
-         float ry    = -gamepad2.right_stick_y;
+         float ry    = -gamepad1.right_stick_y;
 
          // read current value of right bumper
          boolean rBumper = gamepad1.right_bumper;
          boolean lBumper = gamepad1.left_bumper;
 
+         //trigger readings
+         float rTrigger = gamepad1.right_trigger;
+         float lTrigger = gamepad1.left_trigger;
+
          // read the face buttons
-         boolean a = gamepad2.a;
+         boolean a = gamepad1.a;
+
+         boolean y = gamepad1.y;
+
 
 
          /* DO MOTOR STUFF */
@@ -137,28 +168,36 @@ public class RobotTeleOp extends LinearOpMode {
          double br   = nlx   +nly    -nrx;
 
          // give motor commands
-         frontLeft.setPower(fl);
-         backLeft.setPower(bl);
-         frontRight.setPower(fr);
-         backRight.setPower(br);
+         topLeft.setPower(fl);
+         bottomLeft.setPower(bl);
+         topRight.setPower(fr);
+         bottomRight.setPower(br);
 
 
          /* DO INTAKE STUFF */
          if (rBumper) {
-            intakeMotor.setPower(intakePower);
+            intakeMotor2.setPower(intakePower);
          }
          else {
-            intakeMotor.setPower(0);
+            intakeMotor2.setPower(0);
+         }
+         if(rTrigger>=0.05){
+            intakeMotor1.setPower(intakePower);
+         }
+         else{
+            intakeMotor1.setPower(0);
          }
          if (lBumper) {
             //only lets the code below run once
             if(dirToggle) {
                //swaps the direction of the motors, therefore reversing the direction
-               if(intakeMotor.getDirection()==DcMotorSimple.Direction.FORWARD){
-                  intakeMotor.setDirection(DcMotorSimple.Direction.REVERSE);
+               if(intakeMotor1.getDirection()==DcMotorSimple.Direction.FORWARD){
+                  intakeMotor1.setDirection(DcMotorSimple.Direction.REVERSE);
+                  intakeMotor2.setDirection(DcMotorSimple.Direction.REVERSE);
                }
-               else if(intakeMotor.getDirection()==DcMotorSimple.Direction.REVERSE){
-                  intakeMotor.setDirection(DcMotorSimple.Direction.FORWARD);
+               else if(intakeMotor1.getDirection()==DcMotorSimple.Direction.REVERSE){
+                  intakeMotor1.setDirection(DcMotorSimple.Direction.FORWARD);
+                  intakeMotor2.setDirection(DcMotorSimple.Direction.FORWARD);
                }
                //disables further presses
                dirToggle = false;
@@ -187,9 +226,30 @@ public class RobotTeleOp extends LinearOpMode {
          // set arm power
          armMotor.setPower(ry);
 
+
+         //setwinchPower
+         /*winchMotor.setPower(0.0);
+
+         if (rTrigger >= 0.05) {
+            winchMotor.setPower(rTrigger);
+         }
+         else if (lTrigger >= 0.05) {
+            winchMotor.setPower(-(lTrigger));
+         }
+         if (rTrigger >= 0.05 && lTrigger >= 0.05) {
+            winchMotor.setPower(rTrigger-lTrigger);
+         }*/
+
          /* PRINT STUFF */
 
 
+
+         //when button is released, let new button presses be registered
+         if(y){
+            dlServo.setPosition(0);
+         }
+
+         /*
          // print raw joystick readings
          telemetry.addData("lx: ", lx);
          telemetry.addData("ly: ", ly);
@@ -208,7 +268,7 @@ public class RobotTeleOp extends LinearOpMode {
          telemetry.addData("bl: ", bl);
          telemetry.addData("fr: ", fr);
          //wrote "New" so we can know if it's the newest version
-         telemetry.addData("br: New", br);
+         telemetry.addData("br: New", br);*/
 
          // TODO: print time the loop took to execute
 
@@ -216,12 +276,13 @@ public class RobotTeleOp extends LinearOpMode {
       }
 
       // stop all the motors
-      frontLeft.setPower(0.0);
-      frontRight.setPower(0.0);
-      backLeft.setPower(0.0);
-      backRight.setPower(0.0);
+      topLeft.setPower(0.0);
+      topRight.setPower(0.0);
+      bottomLeft.setPower(0.0);
+      bottomRight.setPower(0.0);
       armMotor.setPower(0.0);
-      intakeMotor.setPower(0.0);
+      intakeMotor1.setPower(0.0);
+      intakeMotor2.setPower(0.0);
    }
 }
 

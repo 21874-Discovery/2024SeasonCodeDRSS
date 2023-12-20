@@ -30,24 +30,20 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.acmerobotics.dashboard.FtcDashboard;
-import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
-import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.Servo;
 
-/**
- * Template auto mode with no functionality
- */
 
-@Autonomous(name="Robot: Auto Drive By Encoder", group="Robot")
-public class RobotAutoNoMous extends LinearOpMode {
+@Autonomous(name="RoboBobo", group="Robot")
+public class RoboBoboAuto extends LinearOpMode {
 
-    // setup dashboard
-    // http://192.168.43.1:8080/dash
-    private FtcDashboard dashboard;
+    // declare OpMode members
+
+    private int step=1;
 
     private DcMotor topLeft;
     private DcMotor topRight;
@@ -59,20 +55,14 @@ public class RobotAutoNoMous extends LinearOpMode {
     private double bottomLeftCount;
     private double bottomRightCount;
 
-    private int step=1;
+
     private final double ppr=537.7;
     private final double     dgr    = 1.0 ;     // No External Gearing.
     private final double     wd   = 3.77953 ;     // For figuring circumference
     private final double     tpi         = (ppr * dgr)/(wd * Math.PI);
 
-    //gets ticks per revolution
-
     @Override
     public void runOpMode() {
-
-        // init dashboard and create a new multiple telemetry instance
-        dashboard = FtcDashboard.getInstance();
-        telemetry = new MultipleTelemetry(telemetry, dashboard.getTelemetry());
 
         topLeft=hardwareMap.get(DcMotor.class,"topLeft");
         topRight=hardwareMap.get(DcMotor.class,"topRight");
@@ -83,9 +73,6 @@ public class RobotAutoNoMous extends LinearOpMode {
         topRight.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         bottomLeft.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         bottomRight.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        //reset encoder position
-
-        //run
 
         topLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         topRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
@@ -95,61 +82,105 @@ public class RobotAutoNoMous extends LinearOpMode {
 
         //set position of wanted inches
 
-        topLeft.setDirection(DcMotorSimple.Direction.FORWARD);
-        topRight.setDirection(DcMotorSimple.Direction.REVERSE);
-        bottomLeft.setDirection(DcMotorSimple.Direction.FORWARD);
-        bottomRight.setDirection(DcMotorSimple.Direction.REVERSE);
+        topLeft.setDirection(DcMotorSimple.Direction.REVERSE);
+        topRight.setDirection(DcMotorSimple.Direction.FORWARD);
+        bottomLeft.setDirection(DcMotorSimple.Direction.REVERSE);
+        bottomRight.setDirection(DcMotorSimple.Direction.FORWARD);
 
-        telemetry.addLine("Waiting for start...");
+        topLeft.setTargetPosition((int)(29*tpi));
+        topRight.setTargetPosition((int)(29*tpi));
+        bottomLeft.setTargetPosition((int)(29*tpi));
+        bottomRight.setTargetPosition((int)(29*tpi));
+
+
+        telemetry.addData("Status", "Initialized");
         telemetry.update();
+        // init intake motors
+        // init servo
 
         // Wait for the game to start (driver presses PLAY)
         waitForStart();
 
-        while(opModeIsActive()) {
+        // run until the end of the match (driver presses STOP)
+
+        while (opModeIsActive()) {
+            /* READ INPUTS */
+            // read current values of joystick
             topLeft.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
             topRight.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
             bottomLeft.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
             bottomRight.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
-            TelemetryPacket packet = new TelemetryPacket();
-            while(step==1) {
-                if (topLeft.getCurrentPosition() < Math.abs(topLeft.getTargetPosition())) {
+            topLeft.setPower(dashboardData.drivePower);
+            topRight.setPower(dashboardData.drivePower);
+            bottomLeft.setPower(dashboardData.drivePower);
+            bottomRight.setPower(dashboardData.drivePower);
+
+            while(step==1){
+                if (topLeft.getCurrentPosition() >= Math.abs(topLeft.getTargetPosition())) {
                     //keep moving robot until 4 revolutions
-                    topLeft.setPower(dashboardData.drivePower);
-                    topRight.setPower(dashboardData.drivePower);
-                    bottomLeft.setPower(dashboardData.drivePower);
-                    bottomRight.setPower(dashboardData.drivePower);
-                }
-                else {
                     step = 2;
                     topLeft.setPower(0);
                     topRight.setPower(0);
                     bottomLeft.setPower(0);
                     bottomRight.setPower(0);
-                /*topLeft.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                topRight.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                bottomLeft.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                bottomRight.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);*/
+
+
                     topLeftCount = topLeft.getCurrentPosition();
                     topRightCount = topRight.getCurrentPosition();
                     bottomLeftCount = bottomLeft.getCurrentPosition();
                     bottomRightCount = bottomRight.getCurrentPosition();
+
+                    topLeft.setTargetPosition((int)(17.28*tpi));
+                    topRight.setTargetPosition((int)(17.28*tpi));
+                    bottomLeft.setTargetPosition((int)(17.28*tpi));
+                    bottomRight.setTargetPosition((int)(17.28*tpi));
+
+                    topLeft.setDirection(DcMotorSimple.Direction.FORWARD);
+                    bottomLeft.setDirection(DcMotorSimple.Direction.FORWARD);
                 }
             }
-            while(step == 2) {
-                telemetry.addData("Average After data: ",((topLeft.getCurrentPosition()-topLeftCount)+(topRight.getTargetPosition()-topRightCount)+(bottomLeft.getCurrentPosition()-bottomLeftCount)+(bottomRight.getTargetPosition()-bottomRightCount))/(4*tpi));
+            topLeft.setPower(dashboardData.drivePower);
+            topRight.setPower(dashboardData.drivePower);
+            bottomLeft.setPower(dashboardData.drivePower);
+            bottomRight.setPower(dashboardData.drivePower);
+            while(step==2){
+                if (topLeft.getCurrentPosition() >= Math.abs(topLeft.getTargetPosition())) {
+                    //keep moving robot until 4 revolutions
+                    step = 3;
+                    topLeft.setPower(0);
+                    topRight.setPower(0);
+                    bottomLeft.setPower(0);
+                    bottomRight.setPower(0);
+
+
+                    topLeftCount = topLeft.getCurrentPosition();
+                    topRightCount = topRight.getCurrentPosition();
+                    bottomLeftCount = bottomLeft.getCurrentPosition();
+                    bottomRightCount = bottomRight.getCurrentPosition();
+
+                    topLeft.setTargetPosition((int)(48*tpi));
+                    topRight.setTargetPosition((int)(48*tpi));
+                    bottomLeft.setTargetPosition((int)(48*tpi));
+                    bottomRight.setTargetPosition((int)(48*tpi));
+
+
+                    topLeft.setDirection(DcMotorSimple.Direction.FORWARD);
+                    bottomLeft.setDirection(DcMotorSimple.Direction.FORWARD);
+                }
+            }
+            while(step==3){
+                topLeft.setDirection(DcMotorSimple.Direction.REVERSE);
+                bottomLeft.setDirection(DcMotorSimple.Direction.REVERSE);
             }
 
-
-            telemetry.addData("Average Tick data: ",(topLeft.getCurrentPosition()+topRight.getCurrentPosition()+bottomLeft.getCurrentPosition() + bottomRight.getCurrentPosition()) / 4 );
-            telemetry.addData("Calculated Average Inches: ",((Math.abs(topLeft.getCurrentPosition())+Math.abs(topRight.getCurrentPosition())+Math.abs(bottomLeft.getCurrentPosition()) + Math.abs(bottomRight.getCurrentPosition())) / 4 )/tpi);
-
+            telemetry.addData("Status", "Initialized");
             telemetry.update();
+
         }
-        topLeft.setPower(0);
-        topRight.setPower(0);
-        bottomLeft.setPower(0);
-        bottomRight.setPower(0);
+        topLeft.setPower(0.0);
+        topRight.setPower(0.0);
+        bottomLeft.setPower(0.0);
+        bottomRight.setPower(0.0);
     }
 }

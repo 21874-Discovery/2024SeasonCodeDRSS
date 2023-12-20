@@ -44,6 +44,9 @@ public class armDemo extends LinearOpMode {
 
    // intake
    private DcMotor         armMotor        = null;
+   private Servo           clawServo           = null;
+
+
    private double prevArm = 0.0;
 
    private double ppr = 4.0;
@@ -51,6 +54,9 @@ public class armDemo extends LinearOpMode {
    private double gr = 72.0;
    //gear ratio
 
+   private boolean clawToggle=true;
+
+   private boolean justStopped=true;
 
    @Override
    public void runOpMode() {
@@ -60,6 +66,8 @@ public class armDemo extends LinearOpMode {
       // init intake motors
       // init servo
       armMotor       = hardwareMap.get(DcMotor.class, "armMotor");
+
+      clawServo       = hardwareMap.get(Servo.class, "clawServo");
 
 
       armMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -72,6 +80,8 @@ public class armDemo extends LinearOpMode {
       armMotor.setDirection(DcMotorSimple.Direction.REVERSE);
 
       armMotor.setTargetPosition(0);
+
+      clawServo.setPosition(0);
       // Wait for the game to start (driver presses PLAY)
       waitForStart();
 
@@ -81,26 +91,58 @@ public class armDemo extends LinearOpMode {
          /* READ INPUTS */
          // read current values of joystick
          double right_y=gamepad1.right_stick_y;
-         if(right_y!=0) {
-            if (right_y < Math.abs(prevArm)) {
-               armMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-            }
-            else {
-               armMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-               armMotor.setTargetPosition(armMotor.getCurrentPosition());
-               prevArm = right_y;
-            }
-         }
-         else{
-            prevArm=right_y;
-         }
+         boolean a = gamepad1.a;
+
 
          armMotor.setPower(right_y);
 
+         // if no joystick, hold position
+         /*if(right_y<=0.05){
+            if(justStopped) {
+               armMotor.setTargetPosition(armMotor.getCurrentPosition());
+               justStopped=false;
+            }
+            armMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+         }
+         else {
+            justStopped=true;
+            armMotor.setPower(right_y);
+            armMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+         }*/
+
+         // if joystick, then command the motor proportionally with the input
+
+      /*
+         if (right_y < Math.abs(prevArm)) {
+            armMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+         }
+         else {
+            armMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            armMotor.setTargetPosition(armMotor.getCurrentPosition());
+            prevArm = right_y;
+         }
+
+*/
+         if(a){
+            if(clawToggle) {
+               if(clawServo.getPosition()==0||clawServo.getPosition()==-1) {
+                  clawServo.setPosition(1);
+               }
+               else{
+                  clawServo.setPosition(-1);
+               }
+               clawToggle=false;
+            }
+         }
+         else{
+            clawToggle=true;
+         }
+
          telemetry.addData("Current Power 👍", armMotor.getPower());
+         telemetry.addData("Current Y 👍", right_y);
          telemetry.addData("Current Position 👍", armMotor.getCurrentPosition());
          telemetry.addData("Current Target 👍", armMotor.getTargetPosition());
-         telemetry.addData("Current Previous Power 👍", prevArm);
+         telemetry.addData("Current Previous POWER NEWEST 👎", armMotor.isBusy());
          telemetry.update();
       }
 
